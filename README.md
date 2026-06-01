@@ -1,5 +1,7 @@
 # 🚀 ARES 3 Telemetry Dashboard
 
+[![CI](https://github.com/zak-esposito/ares3-telemetry/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zak-esposito/ares3-telemetry/actions/workflows/ci.yml)
+
 > Mission Control for Mark Watney's survival on Mars — a full-stack telemetry
 > dashboard inspired by Andy Weir's *The Martian*.
 
