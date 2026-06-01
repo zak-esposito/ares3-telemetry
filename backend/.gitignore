@@ -1,0 +1,28 @@
+# Maven build output
+target/
+
+# Compiled classes
+*.class
+
+# Environment / secrets
+.env
+*.env
+
+# Logs
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# H2 file-mode database artifacts (demo mode)
+*.mv.db
+*.trace.db
