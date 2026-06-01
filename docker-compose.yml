@@ -1,6 +1,6 @@
 # ARES 3 Telemetry Dashboard — local stack.
 #
-#   NASA_API_KEY=... ANTHROPIC_API_KEY=... docker-compose up --build
+#   ANTHROPIC_API_KEY=... docker-compose up --build
 #
 # Frontend: http://localhost:3000   Backend: http://localhost:8080
 services:
@@ -9,8 +9,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Falls back to NASA's public DEMO_KEY if unset (rate-limited but works).
-      NASA_API_KEY: ${NASA_API_KEY:-DEMO_KEY}
+      # NASA Image and Video Library API needs no key.
       # No default — the Watney advisor endpoint needs a real Anthropic key.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     healthcheck:

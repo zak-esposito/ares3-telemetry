@@ -63,8 +63,7 @@ controller  →  service  →  repository / external API
 Requires Docker + Docker Compose.
 
 ```bash
-# Optional: export real keys (NASA falls back to DEMO_KEY; the advisor needs a key)
-export NASA_API_KEY=your_nasa_key
+# Optional: export a real key for the Watney advisor (rover photos need no key)
 export ANTHROPIC_API_KEY=your_anthropic_key
 
 docker-compose up --build
@@ -104,7 +103,6 @@ Docker frontend (`:3000`).
 
 | Variable | Used by | Default | Notes |
 |----------|---------|---------|-------|
-| `NASA_API_KEY` | backend | `DEMO_KEY` | Free key at [api.nasa.gov](https://api.nasa.gov/) — `DEMO_KEY` is rate-limited |
 | `ANTHROPIC_API_KEY` | backend | _(none)_ | Required for the advisor — [console.anthropic.com](https://console.anthropic.com/) |
 | `VITE_API_BASE_URL` | frontend | `http://localhost:8080` | Backend base URL, baked at build time |
 

@@ -22,8 +22,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class NasaRoverServiceTest {
 
-    private static final String TEST_KEY = "test-key-123";
-
     @Mock
     private RestTemplate restTemplate;
 
@@ -31,52 +29,59 @@ class NasaRoverServiceTest {
 
     @BeforeEach
     void setUp() {
-        // @Value isn't applied by Mockito, so wire the key in by hand.
-        service = new NasaRoverService(restTemplate, TEST_KEY);
+        service = new NasaRoverService(restTemplate);
     }
 
     @Test
-    void getPhotosBySol_buildsCorrectUrl() {
-        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaPhotosResponse.class)))
-                .thenReturn(new NasaRoverService.NasaPhotosResponse(List.of()));
+    void getPhotosBySol_buildsSolKeywordSearchUrl() {
+        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaSearchResponse.class)))
+                .thenReturn(emptyResponse());
 
         service.getPhotosBySol(1000);
 
         ArgumentCaptor<String> url = ArgumentCaptor.forClass(String.class);
         org.mockito.Mockito.verify(restTemplate)
-                .getForObject(url.capture(), eq(NasaRoverService.NasaPhotosResponse.class));
+                .getForObject(url.capture(), eq(NasaRoverService.NasaSearchResponse.class));
         assertThat(url.getValue())
-                .contains("/rovers/curiosity/photos")
-                .contains("sol=1000")
-                .contains("api_key=" + TEST_KEY);
+                .contains("images-api.nasa.gov/search")
+                .contains("media_type=image")
+                .contains("curiosity")
+                .contains("sol")
+                .contains("1000")
+                .doesNotContain("api_key");
     }
 
     @Test
-    void getLatestPhotos_buildsCorrectUrl() {
-        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaLatestResponse.class)))
-                .thenReturn(new NasaRoverService.NasaLatestResponse(List.of()));
+    void getLatestPhotos_buildsDefaultCuriositySearchUrl() {
+        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaSearchResponse.class)))
+                .thenReturn(emptyResponse());
 
         service.getLatestPhotos();
 
         ArgumentCaptor<String> url = ArgumentCaptor.forClass(String.class);
         org.mockito.Mockito.verify(restTemplate)
-                .getForObject(url.capture(), eq(NasaRoverService.NasaLatestResponse.class));
+                .getForObject(url.capture(), eq(NasaRoverService.NasaSearchResponse.class));
         assertThat(url.getValue())
-                .contains("/rovers/curiosity/latest_photos")
-                .contains("api_key=" + TEST_KEY);
+                .contains("images-api.nasa.gov/search")
+                .contains("media_type=image")
+                .contains("curiosity")
+                .doesNotContain("api_key");
     }
 
     @Test
-    void getPhotosBySol_mapsNestedJsonToFlatDto() {
-        NasaRoverService.NasaPhoto photo = new NasaRoverService.NasaPhoto(
-                42L,
-                1000,
-                "https://mars.nasa.gov/img.jpg",
-                "2024-01-15",
-                new NasaRoverService.NasaCamera("MAST"),
-                new NasaRoverService.NasaRover(5L));
-        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaPhotosResponse.class)))
-                .thenReturn(new NasaRoverService.NasaPhotosResponse(List.of(photo)));
+    void getPhotosBySol_mapsCollectionItemToFlatDto() {
+        NasaRoverService.NasaItem item = new NasaRoverService.NasaItem(
+                List.of(new NasaRoverService.NasaItemData(
+                        "Curiosity at Gale Crater",
+                        "2024-01-15T00:00:00Z",
+                        List.of("MAST", "Mars", "Curiosity"),
+                        "A Curiosity self-portrait.")),
+                List.of(new NasaRoverService.NasaItemLink(
+                        "https://images-assets.nasa.gov/image/PIA12345/PIA12345~thumb.jpg",
+                        "preview",
+                        "image")));
+        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaSearchResponse.class)))
+                .thenReturn(responseOf(item));
 
         List<RoverPhotoDto> result = service.getPhotosBySol(1000);
 
@@ -84,26 +89,79 @@ class NasaRoverServiceTest {
         RoverPhotoDto dto = result.get(0);
         assertThat(dto.sol()).isEqualTo(1000);
         assertThat(dto.earthDate()).isEqualTo("2024-01-15");
-        assertThat(dto.imgSrc()).isEqualTo("https://mars.nasa.gov/img.jpg");
+        assertThat(dto.imgSrc())
+                .isEqualTo("https://images-assets.nasa.gov/image/PIA12345/PIA12345~thumb.jpg");
         assertThat(dto.cameraName()).isEqualTo("MAST");
-        assertThat(dto.roverId()).isEqualTo(5L);
+        assertThat(dto.roverId()).isEqualTo(1L);
     }
 
     @Test
-    void getPhotosBySol_nullPhotosYieldsEmptyList() {
-        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaPhotosResponse.class)))
-                .thenReturn(new NasaRoverService.NasaPhotosResponse(null));
+    void getLatestPhotos_usesSolZeroAndFallsBackToTitleForCamera() {
+        NasaRoverService.NasaItem item = new NasaRoverService.NasaItem(
+                List.of(new NasaRoverService.NasaItemData(
+                        "Curiosity Panorama",
+                        "2023-05-01T12:00:00Z",
+                        List.of(),
+                        "A wide view.")),
+                List.of(new NasaRoverService.NasaItemLink(
+                        "https://images-assets.nasa.gov/image/abc/abc~thumb.jpg",
+                        "preview",
+                        "image")));
+        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaSearchResponse.class)))
+                .thenReturn(responseOf(item));
+
+        List<RoverPhotoDto> result = service.getLatestPhotos();
+
+        assertThat(result).hasSize(1);
+        RoverPhotoDto dto = result.get(0);
+        assertThat(dto.sol()).isZero();
+        assertThat(dto.cameraName()).isEqualTo("Curiosity Panorama");
+    }
+
+    @Test
+    void getPhotosBySol_skipsItemsWithNoImageLink() {
+        NasaRoverService.NasaItem withImage = new NasaRoverService.NasaItem(
+                List.of(new NasaRoverService.NasaItemData(
+                        "Has image", "2024-01-15T00:00:00Z", List.of("MAST"), null)),
+                List.of(new NasaRoverService.NasaItemLink(
+                        "https://images-assets.nasa.gov/image/a/a.jpg", "preview", "image")));
+        NasaRoverService.NasaItem withoutImage = new NasaRoverService.NasaItem(
+                List.of(new NasaRoverService.NasaItemData(
+                        "No image", "2024-01-15T00:00:00Z", List.of("MAST"), null)),
+                List.of());
+        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaSearchResponse.class)))
+                .thenReturn(responseOf(withImage, withoutImage));
+
+        assertThat(service.getPhotosBySol(1000)).hasSize(1);
+    }
+
+    @Test
+    void getPhotosBySol_nullCollectionYieldsEmptyList() {
+        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaSearchResponse.class)))
+                .thenReturn(new NasaRoverService.NasaSearchResponse(null));
 
         assertThat(service.getPhotosBySol(1000)).isEmpty();
     }
 
     @Test
     void getLatestPhotos_upstreamFailureWrappedAsUpstreamServiceException() {
-        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaLatestResponse.class)))
+        when(restTemplate.getForObject(anyString(), eq(NasaRoverService.NasaSearchResponse.class)))
                 .thenThrow(new RestClientException("connection refused"));
 
         assertThatThrownBy(() -> service.getLatestPhotos())
                 .isInstanceOf(UpstreamServiceException.class)
                 .hasMessageContaining("NASA rover photos unavailable");
+    }
+
+    // --- helpers ---
+
+    private static NasaRoverService.NasaSearchResponse emptyResponse() {
+        return new NasaRoverService.NasaSearchResponse(
+                new NasaRoverService.NasaCollection(List.of()));
+    }
+
+    private static NasaRoverService.NasaSearchResponse responseOf(NasaRoverService.NasaItem... items) {
+        return new NasaRoverService.NasaSearchResponse(
+                new NasaRoverService.NasaCollection(List.of(items)));
     }
 }
