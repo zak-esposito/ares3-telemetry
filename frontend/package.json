@@ -15,6 +15,7 @@
     "marked": "^18.0.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "react-gauge-component": "^2.0.29",
     "recharts": "^3.8.1"
   },
   "devDependencies": {

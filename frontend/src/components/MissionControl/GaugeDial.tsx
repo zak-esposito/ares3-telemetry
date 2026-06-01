@@ -1,4 +1,16 @@
-import { SEVERITY_COLOR, type Severity } from '../../lib/status'
+import { GaugeComponent } from 'react-gauge-component'
+
+/**
+ * A single colour zone of the gauge arc.
+ * Use `limit` (upper bound in value units) when the value range maps cleanly to the
+ * arc, or `length` (ratio 0–1 of the arc) when you want to fix the visual proportion
+ * independently of the value scale. Don't mix both on the same zone.
+ */
+export interface GaugeZone {
+  limit?: number
+  length?: number
+  color: string
+}
 
 interface GaugeDialProps {
   label: string
@@ -6,26 +18,9 @@ interface GaugeDialProps {
   unit: string
   min: number
   max: number
-  severity: Severity
+  /** Colour zones across the arc, in ascending `limit` order. Last limit should equal `max`. */
+  subArcs: GaugeZone[]
   decimals?: number
-}
-
-const CX = 100
-const CY = 100
-const R = 82
-
-/** Point on the gauge circle for a math-convention angle (y-up), in SVG coords. */
-function polar(angleDeg: number): { x: number; y: number } {
-  const a = (angleDeg * Math.PI) / 180
-  return { x: CX + R * Math.cos(a), y: CY - R * Math.sin(a) }
-}
-
-/** Arc path from startAngle down to endAngle over the top (sweep=0). */
-function arc(startAngle: number, endAngle: number): string {
-  const s = polar(startAngle)
-  const e = polar(endAngle)
-  const large = Math.abs(endAngle - startAngle) > 180 ? 1 : 0
-  return `M ${s.x} ${s.y} A ${R} ${R} 0 ${large} 0 ${e.x} ${e.y}`
 }
 
 export default function GaugeDial({
@@ -34,59 +29,64 @@ export default function GaugeDial({
   unit,
   min,
   max,
-  severity,
+  subArcs,
   decimals = 1,
 }: GaugeDialProps) {
-  const fraction = Math.min(1, Math.max(0, (value - min) / (max - min)))
-  const valueAngle = 180 - fraction * 180
-  const color = SEVERITY_COLOR[severity]
-  const needle = polar(valueAngle)
-  // Pull the needle tip in slightly so it sits inside the arc.
-  const tip = {
-    x: CX + (needle.x - CX) * 0.82,
-    y: CY + (needle.y - CY) * 0.82,
-  }
-
   return (
     <div className="flex flex-col items-center rounded-lg border border-edge bg-panel p-4">
-      <svg viewBox="0 0 200 116" className="w-full" role="img" aria-label={label}>
-        {/* track */}
-        <path
-          d={arc(180, 0)}
-          fill="none"
-          stroke="#2a2a3a"
-          strokeWidth={10}
-          strokeLinecap="round"
-        />
-        {/* value */}
-        <path
-          d={arc(180, valueAngle)}
-          fill="none"
-          stroke={color}
-          strokeWidth={10}
-          strokeLinecap="round"
-        />
-        {/* needle */}
-        <line
-          x1={CX}
-          y1={CY}
-          x2={tip.x}
-          y2={tip.y}
-          stroke={color}
-          strokeWidth={3}
-          strokeLinecap="round"
-        />
-        <circle cx={CX} cy={CY} r={5} fill={color} />
-      </svg>
+      <GaugeComponent
+        className="w-full"
+        type="radial"
+        minValue={min}
+        maxValue={max}
+        value={value}
+        arc={{
+          width: 0.24,
+          padding: 0.01,
+          cornerRadius: 2,
+          subArcs,
+        }}
+        pointer={{
+          type: 'needle',
+          color: '#cbd5e1',
+          baseColor: '#475569',
+          length: 0.72,
+          width: 12,
+          elastic: true,
+        }}
+        labels={{
+          valueLabel: {
+            matchColorWithArc: true,
+            maxDecimalDigits: decimals,
+            formatTextValue: (v) => `${Number(v).toFixed(decimals)} ${unit}`,
+            style: {
+              fontFamily: 'monospace',
+              fontWeight: 'bold',
+              fontSize: '34px',
+              textShadow: 'none',
+            },
+          },
+          tickLabels: {
+            type: 'outer',
+            hideMinMax: false,
+            ticks: [],
+            defaultTickValueConfig: {
+              style: {
+                fontFamily: 'monospace',
+                fontSize: '10px',
+                fill: '#64748b',
+                textShadow: 'none',
+              },
+            },
+            defaultTickLineConfig: {
+              color: '#2a2a3a',
+            },
+          },
+        }}
+      />
 
-      <div className="-mt-4 text-center">
-        <div className="font-mono text-2xl font-bold" style={{ color }}>
-          {value.toFixed(decimals)}
-          <span className="ml-1 text-sm text-slate-400">{unit}</span>
-        </div>
-        <div className="mt-1 text-[10px] tracking-[0.25em] text-slate-500 uppercase">
-          {label}
-        </div>
+      <div className="mt-1 text-[10px] tracking-[0.25em] text-slate-500 uppercase">
+        {label}
       </div>
     </div>
   )
