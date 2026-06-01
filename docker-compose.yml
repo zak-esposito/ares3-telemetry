@@ -3,7 +3,25 @@
 #   ANTHROPIC_API_KEY=... docker-compose up --build
 #
 # Frontend: http://localhost:3000   Backend: http://localhost:8080
+# The backend image runs the prod profile (PostgreSQL), so this stack
+# exercises the same persistence path used on Render.
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ares3
+      POSTGRES_PASSWORD: ares3
+      POSTGRES_DB: ares3
+    volumes:
+      # Named volume keeps simulation state across container restarts.
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ares3 -d ares3"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   backend:
     build: ./backend
     ports:
@@ -12,6 +30,11 @@ services:
       # NASA Image and Video Library API needs no key.
       # No default — the Watney advisor endpoint needs a real Anthropic key.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Full JDBC URL with credentials as query params (prod profile).
+      DATABASE_URL: jdbc:postgresql://postgres:5432/ares3?user=ares3&password=ares3
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       # busybox wget ships in the alpine runtime image.
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
@@ -27,3 +50,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+
+volumes:
+  postgres-data:

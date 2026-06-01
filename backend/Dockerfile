@@ -21,5 +21,8 @@ WORKDIR /app
 # artifactId=telemetry, version=0.0.1-SNAPSHOT -> telemetry-0.0.1-SNAPSHOT.jar
 COPY --from=build /build/target/telemetry-*.jar app.jar
 
+# Containerised runtime uses PostgreSQL (prod profile); local dev stays on H2.
+ENV SPRING_PROFILES_ACTIVE=prod
+
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
