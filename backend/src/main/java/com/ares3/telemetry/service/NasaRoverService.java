@@ -4,12 +4,15 @@ import com.ares3.telemetry.dto.RoverPhotoDto;
 import com.ares3.telemetry.exception.UpstreamServiceException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 /**
@@ -30,9 +33,11 @@ public class NasaRoverService {
     private static final long CURIOSITY_ROVER_ID = 1L;
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
-    public NasaRoverService(RestTemplate restTemplate) {
+    public NasaRoverService(RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
     }
 
     /** Curiosity imagery matched to the given Martian sol via keyword search. */
@@ -50,19 +55,41 @@ public class NasaRoverService {
     // --- internals ---
 
     private List<RoverPhotoDto> search(String query, int sol) {
-        String url = UriComponentsBuilder.fromHttpUrl(BASE_URL)
+        // Build a fully-encoded URI and hand RestTemplate the URI (not a String).
+        // A String argument is treated as a URI template and re-encoded, which
+        // double-encodes the spaces in the query (%20 -> %2520) and makes the
+        // search match nothing. Passing a URI bypasses that second encode.
+        URI uri = UriComponentsBuilder.fromHttpUrl(BASE_URL)
                 .queryParam("q", query)
                 .queryParam("media_type", "image")
-                .toUriString();
-        NasaSearchResponse response = get(url);
-        return toDtos(response, sol);
+                .encode()
+                .build()
+                .toUri();
+
+        String body = fetch(uri);
+        if (log.isDebugEnabled()) {
+            log.debug("NASA image library raw response from {}: {}", uri, body);
+        }
+        return toDtos(parse(body), sol);
     }
 
-    private NasaSearchResponse get(String url) {
+    private String fetch(URI uri) {
         try {
-            return restTemplate.getForObject(url, NasaSearchResponse.class);
+            return restTemplate.getForObject(uri, String.class);
         } catch (RestClientException ex) {
             log.warn("NASA image library request failed: {}", ex.getMessage());
+            throw new UpstreamServiceException("NASA rover photos unavailable", ex);
+        }
+    }
+
+    private NasaSearchResponse parse(String body) {
+        if (body == null || body.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(body, NasaSearchResponse.class);
+        } catch (JsonProcessingException ex) {
+            log.warn("NASA image library response could not be parsed: {}", ex.getMessage());
             throw new UpstreamServiceException("NASA rover photos unavailable", ex);
         }
     }
