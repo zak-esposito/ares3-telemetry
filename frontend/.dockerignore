@@ -1,0 +1,14 @@
+# Dependencies + build output (reinstalled/rebuilt inside the image)
+node_modules/
+dist/
+
+# Version control / IDE / OS noise
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+
+# Local environment files — VITE_API_BASE_URL is passed as a build arg instead
+.env
+.env.*

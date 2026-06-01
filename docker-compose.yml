@@ -1,0 +1,30 @@
+# ARES 3 Telemetry Dashboard — local stack.
+#
+#   NASA_API_KEY=... ANTHROPIC_API_KEY=... docker-compose up --build
+#
+# Frontend: http://localhost:3000   Backend: http://localhost:8080
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Falls back to NASA's public DEMO_KEY if unset (rate-limited but works).
+      NASA_API_KEY: ${NASA_API_KEY:-DEMO_KEY}
+      # No default — the Watney advisor endpoint needs a real Anthropic key.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    healthcheck:
+      # busybox wget ships in the alpine runtime image.
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy

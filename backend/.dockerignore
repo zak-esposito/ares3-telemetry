@@ -1,0 +1,14 @@
+# Build output (rebuilt inside the image)
+target/
+
+# Version control / IDE / OS noise
+.git
+.gitignore
+.idea
+*.iml
+.vscode
+.DS_Store
+
+# Local environment files — never bake secrets into an image
+.env
+.env.*
