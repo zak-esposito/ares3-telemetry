@@ -2,6 +2,7 @@ import { useState } from 'react'
 import ErrorBanner from '../common/ErrorBanner'
 import { ApiClientError, requestAnalysis } from '../../api/client'
 import { riskSeverity, SEVERITY_COLOR } from '../../lib/status'
+import { renderMarkdown } from '../../lib/markdown'
 import type { WatneyAdviceDto } from '../../types/telemetry'
 
 function formatTimestamp(iso: string): string {
@@ -81,9 +82,12 @@ export default function WatneyLog() {
                   {entry.riskLevel} risk
                 </span>
               </header>
-              <p className="text-sm leading-relaxed whitespace-pre-line text-slate-200">
-                {entry.advice}
-              </p>
+              <div
+                className="advice text-sm leading-relaxed text-slate-200"
+                dangerouslySetInnerHTML={{
+                  __html: renderMarkdown(entry.advice),
+                }}
+              />
               <footer className="mt-3 text-[10px] tracking-[0.2em] text-slate-600 uppercase">
                 {formatTimestamp(entry.timestamp)}
               </footer>
