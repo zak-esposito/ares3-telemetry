@@ -18,9 +18,9 @@ Watney-style survival recommendations based on the current readings.
 
 | Surface | URL |
 |---------|-----|
-| Frontend (Vercel) | _coming soon_ |
-| Backend (Render)  | _coming soon_ |
-| Health check      | `<backend-url>/actuator/health` |
+| Frontend (Vercel) | https://ares3-telemetry.vercel.app |
+| Backend (Render)  | https://ares3-telemetry.onrender.com |
+| Health check      | https://ares3-telemetry.onrender.com/actuator/health |
 
 ---
 
