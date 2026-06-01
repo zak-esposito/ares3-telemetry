@@ -45,6 +45,13 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, message.isBlank() ? "Validation failed" : message, req);
     }
 
+    /** An external upstream API (NASA, Anthropic) failed or returned bad data. */
+    @ExceptionHandler(UpstreamServiceException.class)
+    public ResponseEntity<ApiError> handleUpstream(UpstreamServiceException ex, HttpServletRequest req) {
+        log.warn("Upstream service error at {}: {}", req.getRequestURI(), ex.getMessage());
+        return build(HttpStatus.BAD_GATEWAY, ex.getMessage(), req);
+    }
+
     /** Last-resort handler — logs the cause, returns a generic 500. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest req) {

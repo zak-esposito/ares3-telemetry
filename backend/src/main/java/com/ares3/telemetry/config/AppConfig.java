@@ -2,6 +2,9 @@ package com.ares3.telemetry.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Random;
 
@@ -19,5 +22,31 @@ public class AppConfig {
     @Bean
     public Random random() {
         return new Random();
+    }
+
+    /**
+     * Shared HTTP client for outbound calls to external APIs (NASA, Anthropic).
+     * Exposed as a bean so services receive it by constructor injection and can
+     * mock it in unit tests.
+     */
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+    /**
+     * Allows the React dev server (Vite on 5173, CRA on 3000) to call the API
+     * across origins during local development.
+     */
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/api/**")
+                        .allowedOrigins("http://localhost:3000", "http://localhost:5173")
+                        .allowedMethods("GET", "POST");
+            }
+        };
     }
 }
