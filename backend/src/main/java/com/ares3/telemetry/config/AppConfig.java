@@ -35,8 +35,8 @@ public class AppConfig {
     }
 
     /**
-     * Allows the React dev server (Vite on 5173, CRA on 3000) to call the API
-     * across origins during local development.
+     * Allows the React dev server (Vite on 5173, CRA on 3000) and the deployed
+     * Vercel frontend to call the API across origins.
      */
     @Bean
     public WebMvcConfigurer corsConfigurer() {
@@ -44,7 +44,10 @@ public class AppConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:3000", "http://localhost:5173")
+                        .allowedOrigins(
+                                "http://localhost:3000",
+                                "http://localhost:5173",
+                                "https://ares3-telemetry.vercel.app")
                         .allowedMethods("GET", "POST");
             }
         };
