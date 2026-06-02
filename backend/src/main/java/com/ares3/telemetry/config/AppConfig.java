@@ -1,11 +1,13 @@
 package com.ares3.telemetry.config;
 
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.time.Duration;
 import java.util.Random;
 
 /**
@@ -27,11 +29,15 @@ public class AppConfig {
     /**
      * Shared HTTP client for outbound calls to external APIs (NASA, Anthropic).
      * Exposed as a bean so services receive it by constructor injection and can
-     * mock it in unit tests.
+     * mock it in unit tests. Connect/read timeouts keep a slow or unresponsive
+     * upstream from hanging request threads indefinitely.
      */
     @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
+    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+        return builder
+                .setConnectTimeout(Duration.ofSeconds(2))
+                .setReadTimeout(Duration.ofSeconds(10))
+                .build();
     }
 
     /**

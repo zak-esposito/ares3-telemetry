@@ -4,6 +4,7 @@ import MissionControl from './components/MissionControl/MissionControl'
 import WatneyLog from './components/WatneyLog/WatneyLog'
 import RoverOps from './components/RoverOps/RoverOps'
 import ResourceForecast from './components/ResourceForecast/ResourceForecast'
+import ErrorBoundary from './components/common/ErrorBoundary'
 import { useTelemetry } from './hooks/useTelemetry'
 
 const TITLES: Record<ViewKey, string> = {
@@ -36,17 +37,19 @@ export default function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-8">
-          {view === 'mission' && <MissionControl telemetry={telemetry} />}
-          {view === 'log' && <WatneyLog />}
-          {view === 'rover' && <RoverOps />}
-          {view === 'forecast' && (
-            <ResourceForecast
-              snapshot={telemetry.data}
-              loading={telemetry.loading}
-              error={telemetry.error}
-              onRetry={telemetry.refetch}
-            />
-          )}
+          <ErrorBoundary key={view}>
+            {view === 'mission' && <MissionControl telemetry={telemetry} />}
+            {view === 'log' && <WatneyLog />}
+            {view === 'rover' && <RoverOps />}
+            {view === 'forecast' && (
+              <ResourceForecast
+                snapshot={telemetry.data}
+                loading={telemetry.loading}
+                error={telemetry.error}
+                onRetry={telemetry.refetch}
+              />
+            )}
+          </ErrorBoundary>
         </div>
       </main>
     </div>

@@ -24,15 +24,15 @@ interface ForecastPoint {
   sol: number
   food: number
   water: number
-  battery: number
 }
 
 const HORIZON = 100
 
 /**
- * Projects food/water/battery forward using the same rates the backend
- * simulation applies: food -1/sol, water +0.5/sol (reclaimer condensate),
- * solar x0.9995/sol dust degradation (battery tracks the solar decline).
+ * Projects food/water forward using the same rates the backend simulation
+ * applies: food -1/sol, water +0.5/sol (reclaimer condensate). Battery is not
+ * projected — the backend holds batteryPercent constant across sols, so a
+ * decay curve here would contradict the actual simulation.
  */
 function project(snapshot: HabSnapshotDto): ForecastPoint[] {
   const points: ForecastPoint[] = []
@@ -41,10 +41,6 @@ function project(snapshot: HabSnapshotDto): ForecastPoint[] {
       sol: snapshot.sol + i,
       food: Math.max(0, snapshot.foodSolsRemaining - i),
       water: snapshot.waterLitres + 0.5 * i,
-      battery: Math.min(
-        100,
-        Math.max(0, snapshot.batteryPercent * Math.pow(0.9995, i)),
-      ),
     })
   }
   return points
@@ -120,14 +116,6 @@ export default function ResourceForecast({
               dataKey="water"
               name="Water (L)"
               stroke="#38bdf8"
-              strokeWidth={2}
-              dot={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="battery"
-              name="Battery (%)"
-              stroke="#ffb020"
               strokeWidth={2}
               dot={false}
             />

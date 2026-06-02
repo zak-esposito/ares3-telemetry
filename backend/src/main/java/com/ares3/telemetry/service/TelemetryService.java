@@ -15,6 +15,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Core telemetry logic: serves snapshots and advances the Mars-habitat
@@ -194,36 +196,24 @@ public class TelemetryService {
         RandomEvent event = EVENTS[random.nextInt(EVENTS.length)];
         s.setLastEvent(event.name());
         switch (event) {
-            case MICROMETEORITE_STRIKE -> degrade(s, SystemStatus.DEGRADED, "atmospheric");
+            case MICROMETEORITE_STRIKE ->
+                    degrade(s::getAtmosphericRegulatorStatus, s::setAtmosphericRegulatorStatus, SystemStatus.DEGRADED);
             case DUST_STORM -> {
-                s.setSolarWatts(s.getSolarWatts() * 0.5);
-                degrade(s, SystemStatus.DEGRADED, "oxygenator");
+                s.setSolarWatts(s.getSolarWatts() * SimulationConstants.DUST_STORM_SOLAR_FACTOR);
+                degrade(s::getOxygenatorStatus, s::setOxygenatorStatus, SystemStatus.DEGRADED);
             }
-            case SYSTEM_GLITCH -> degrade(s, SystemStatus.DEGRADED, "water");
-            case CROP_DISEASE -> s.setEstimatedPotatoKg(s.getEstimatedPotatoKg() * 0.5);
+            case SYSTEM_GLITCH ->
+                    degrade(s::getWaterReclaimerStatus, s::setWaterReclaimerStatus, SystemStatus.DEGRADED);
+            case CROP_DISEASE ->
+                    s.setEstimatedPotatoKg(s.getEstimatedPotatoKg() * SimulationConstants.CROP_DISEASE_LOSS_FACTOR);
         }
         log.info("Random event on Sol {}: {}", s.getSol(), event);
     }
 
-    /** Knock a system to the given status if it is currently healthier. */
-    private void degrade(HabSnapshot s, SystemStatus to, String system) {
-        switch (system) {
-            case "oxygenator" -> {
-                if (s.getOxygenatorStatus() == SystemStatus.NOMINAL) {
-                    s.setOxygenatorStatus(to);
-                }
-            }
-            case "water" -> {
-                if (s.getWaterReclaimerStatus() == SystemStatus.NOMINAL) {
-                    s.setWaterReclaimerStatus(to);
-                }
-            }
-            case "atmospheric" -> {
-                if (s.getAtmosphericRegulatorStatus() == SystemStatus.NOMINAL) {
-                    s.setAtmosphericRegulatorStatus(to);
-                }
-            }
-            default -> { /* no-op */ }
+    /** Knock a system to the given status if it is currently healthier (NOMINAL). */
+    private void degrade(Supplier<SystemStatus> getter, Consumer<SystemStatus> setter, SystemStatus to) {
+        if (getter.get() == SystemStatus.NOMINAL) {
+            setter.accept(to);
         }
     }
 

@@ -59,6 +59,10 @@ public final class SimulationConstants {
     // --- Random events ---
     /** Probability that a random event occurs on any given simulated sol. */
     public static final double RANDOM_EVENT_CHANCE = 0.10;
+    /** Multiplier applied to solar output when a DUST_STORM strikes. */
+    public static final double DUST_STORM_SOLAR_FACTOR = 0.5;
+    /** Multiplier applied to estimated potato yield when CROP_DISEASE strikes. */
+    public static final double CROP_DISEASE_LOSS_FACTOR = 0.5;
 
     // --- Floors ---
     public static final double FOOD_FLOOR = 0.0;
