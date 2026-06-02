@@ -1,3 +1,4 @@
+import InstrumentPanel from '../common/InstrumentPanel'
 import {
   SEVERITY_COLOR,
   batterySeverity,
@@ -12,8 +13,14 @@ interface BarRow {
   display: string
   /** Fraction 0-1 for the bar fill. */
   fraction: number
+  /** Upper bound shown as the right-hand scale tick. */
+  scale: string
   severity: Severity
 }
+
+// Notch overlay carves the meter fill into discrete segments (instrument feel).
+const NOTCHES =
+  'repeating-linear-gradient(90deg, transparent 0, transparent 6px, var(--color-panel) 6px, var(--color-panel) 7px)'
 
 interface ResourceBarsProps {
   foodSolsRemaining: number
@@ -36,6 +43,7 @@ export default function ResourceBars({
       value: foodSolsRemaining,
       display: `${foodSolsRemaining.toFixed(0)} sols`,
       fraction: Math.min(1, foodSolsRemaining / FOOD_MAX),
+      scale: `${FOOD_MAX}`,
       severity: foodSeverity(foodSolsRemaining),
     },
     {
@@ -43,6 +51,7 @@ export default function ResourceBars({
       value: waterLitres,
       display: `${waterLitres.toFixed(0)} L`,
       fraction: Math.min(1, waterLitres / WATER_MAX),
+      scale: `${WATER_MAX}`,
       severity: waterSeverity(waterLitres),
     },
     {
@@ -50,39 +59,52 @@ export default function ResourceBars({
       value: batteryPercent,
       display: `${batteryPercent.toFixed(0)} %`,
       fraction: Math.min(1, batteryPercent / 100),
+      scale: '100',
       severity: batterySeverity(batteryPercent),
     },
   ]
 
   return (
-    <div className="rounded-lg border border-edge bg-panel p-5">
-      <h2 className="mb-4 text-xs tracking-[0.25em] text-slate-400 uppercase">
-        Resources
-      </h2>
-      <div className="flex flex-col gap-4">
-        {rows.map((row) => (
-          <div key={row.label}>
-            <div className="mb-1 flex items-baseline justify-between">
-              <span className="text-sm text-slate-300">{row.label}</span>
-              <span
-                className="font-mono text-sm font-semibold"
-                style={{ color: SEVERITY_COLOR[row.severity] }}
-              >
-                {row.display}
-              </span>
+    <InstrumentPanel title="Resources" code="RES">
+      <div className="flex flex-col gap-5">
+        {rows.map((row) => {
+          const color = SEVERITY_COLOR[row.severity]
+          return (
+            <div key={row.label}>
+              <div className="mb-1.5 flex items-baseline justify-between">
+                <span className="text-[11px] tracking-[0.2em] text-slate-400 uppercase">
+                  {row.label}
+                </span>
+                <span
+                  className="font-mono text-base font-bold tabular-nums"
+                  style={{ color, textShadow: `0 0 10px ${color}55` }}
+                >
+                  {row.display}
+                </span>
+              </div>
+              <div className="relative h-3 w-full overflow-hidden border border-edge bg-panel-2">
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{
+                    width: `${row.fraction * 100}%`,
+                    backgroundColor: color,
+                    boxShadow: `0 0 10px ${color}66`,
+                  }}
+                />
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0"
+                  style={{ backgroundImage: NOTCHES }}
+                />
+              </div>
+              <div className="mt-1 flex justify-between font-mono text-[9px] tracking-[0.2em] text-slate-600">
+                <span>0</span>
+                <span>{row.scale}</span>
+              </div>
             </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-panel-2">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${row.fraction * 100}%`,
-                  backgroundColor: SEVERITY_COLOR[row.severity],
-                }}
-              />
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
-    </div>
+    </InstrumentPanel>
   )
 }

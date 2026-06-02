@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Legend,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import Spinner from '../common/Spinner'
 import ErrorBanner from '../common/ErrorBanner'
+import InstrumentPanel from '../common/InstrumentPanel'
 import type { HabSnapshotDto } from '../../types/telemetry'
 
 interface ResourceForecastProps {
@@ -62,66 +63,95 @@ export default function ResourceForecast({
   if (!snapshot) return null
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-edge bg-panel p-6">
-      <div>
-        <h2 className="text-sm tracking-[0.25em] text-slate-300 uppercase">
-          {HORIZON}-Sol Projection
-        </h2>
-        <p className="mt-1 text-xs text-slate-500">
-          Projected from Sol {snapshot.sol} at current consumption rates.
-        </p>
-      </div>
+    <InstrumentPanel
+      title={`${HORIZON}-Sol Projection`}
+      code="FCT"
+      bodyClassName="flex flex-col gap-4 p-6"
+    >
+      <p className="font-mono text-xs tracking-wider text-slate-500">
+        Projected from Sol {snapshot.sol} at current consumption rates.
+      </p>
 
       <div className="h-[440px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
+          <ComposedChart
             data={data}
             margin={{ top: 10, right: 24, bottom: 10, left: 0 }}
           >
-            <CartesianGrid stroke="#2a2a3a" strokeDasharray="3 3" />
+            <defs>
+              <linearGradient id="foodFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#00ff88" stopOpacity={0.22} />
+                <stop offset="100%" stopColor="#00ff88" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="waterFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.18} />
+                <stop offset="100%" stopColor="#38bdf8" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="#2a2a3a" strokeDasharray="2 4" />
             <XAxis
               dataKey="sol"
-              stroke="#64748b"
-              tick={{ fontSize: 11 }}
+              stroke="#475569"
+              tick={{ fontSize: 10, fontFamily: 'var(--font-mono)', fill: '#64748b' }}
               label={{
-                value: 'Sol',
+                value: 'SOL',
                 position: 'insideBottom',
                 offset: -4,
                 fill: '#64748b',
-                fontSize: 11,
+                fontSize: 10,
               }}
             />
-            <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
+            <YAxis
+              stroke="#475569"
+              tick={{ fontSize: 10, fontFamily: 'var(--font-mono)', fill: '#64748b' }}
+            />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#14141c',
+                backgroundColor: '#06090c',
                 border: '1px solid #2a2a3a',
-                borderRadius: 8,
+                borderRadius: 0,
                 fontSize: 12,
+                fontFamily: 'var(--font-mono)',
               }}
-              labelStyle={{ color: '#e2e8f0' }}
+              labelStyle={{
+                color: '#00ff88',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+              }}
+              cursor={{ stroke: '#3d3d52', strokeDasharray: '3 3' }}
               labelFormatter={(label) => `Sol ${label}`}
             />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Line
+            <Legend
+              wrapperStyle={{
+                fontSize: 11,
+                fontFamily: 'var(--font-mono)',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+              }}
+            />
+            <Area
               type="monotone"
               dataKey="food"
               name="Food (sols)"
               stroke="#00ff88"
               strokeWidth={2}
+              fill="url(#foodFill)"
               dot={false}
+              activeDot={{ r: 3, strokeWidth: 0 }}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="water"
               name="Water (L)"
               stroke="#38bdf8"
               strokeWidth={2}
+              fill="url(#waterFill)"
               dot={false}
+              activeDot={{ r: 3, strokeWidth: 0 }}
             />
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </InstrumentPanel>
   )
 }

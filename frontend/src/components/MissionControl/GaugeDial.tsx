@@ -1,4 +1,6 @@
 import { GaugeComponent } from 'react-gauge-component'
+import InstrumentPanel from '../common/InstrumentPanel'
+import type { Severity } from '../../lib/status'
 
 /**
  * A single colour zone of the gauge arc.
@@ -21,6 +23,8 @@ interface GaugeDialProps {
   /** Colour zones across the arc, in ascending `limit` order. Last limit should equal `max`. */
   subArcs: GaugeZone[]
   decimals?: number
+  /** Drives the panel header LED + bracket alarm tint. */
+  severity?: Severity
 }
 
 export default function GaugeDial({
@@ -31,9 +35,15 @@ export default function GaugeDial({
   max,
   subArcs,
   decimals = 1,
+  severity,
 }: GaugeDialProps) {
   return (
-    <div className="flex flex-col items-center rounded-lg border border-edge bg-panel p-4">
+    <InstrumentPanel
+      title={label}
+      code={unit}
+      led={severity}
+      bodyClassName="flex justify-center px-3 pb-3 pt-2"
+    >
       <GaugeComponent
         className="w-full"
         type="radial"
@@ -84,10 +94,6 @@ export default function GaugeDial({
           },
         }}
       />
-
-      <div className="mt-1 text-[10px] tracking-[0.25em] text-slate-500 uppercase">
-        {label}
-      </div>
-    </div>
+    </InstrumentPanel>
   )
 }

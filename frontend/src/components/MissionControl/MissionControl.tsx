@@ -4,8 +4,16 @@ import ResourceBars from './ResourceBars'
 import SystemStatusPanel from './SystemStatusPanel'
 import Spinner from '../common/Spinner'
 import ErrorBanner from '../common/ErrorBanner'
+import InstrumentPanel from '../common/InstrumentPanel'
+import SegmentDisplay from '../common/SegmentDisplay'
 import { ApiClientError, simulate } from '../../api/client'
-import { SEVERITY_COLOR } from '../../lib/status'
+import {
+  SEVERITY_COLOR,
+  co2Severity,
+  o2Severity,
+  pressureSeverity,
+  tempSeverity,
+} from '../../lib/status'
 import type { UseTelemetryResult } from '../../hooks/useTelemetry'
 
 const { nominal, warn, danger } = SEVERITY_COLOR
@@ -74,31 +82,45 @@ export default function MissionControl({ telemetry }: MissionControlProps) {
   if (!data) return null
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Sol counter + advance */}
-      <div className="flex flex-wrap items-end justify-between gap-4 rounded-lg border border-edge bg-panel p-6">
-        <div>
-          <div className="text-[10px] tracking-[0.4em] text-slate-500 uppercase">
-            Martian Sol
-          </div>
-          <div className="font-mono text-6xl font-bold text-accent tabular-nums">
-            {data.sol}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={advanceSol}
-          disabled={advancing}
-          className="rounded-md border border-accent/50 bg-accent/10 px-6 py-3 text-sm font-semibold tracking-[0.2em] text-accent uppercase transition hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
+    <div className="flex flex-col gap-5">
+      {/* Hero: Sol readout + advance control */}
+      <div className="reveal" style={{ '--i': 0 } as React.CSSProperties}>
+        <InstrumentPanel
+          title="Mission Status"
+          code="MSN · ACIDALIA PLANITIA"
+          bodyClassName="flex flex-wrap items-center justify-between gap-6 p-6"
         >
-          {advancing ? 'Advancing…' : 'Advance Sol ▸'}
-        </button>
+          <div>
+            <div
+              className="mb-2 text-[11px] tracking-[0.45em] text-slate-500 uppercase"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              Martian Sol
+            </div>
+            <SegmentDisplay value={data.sol} digits={3} size="4.75rem" />
+          </div>
+
+          <button
+            type="button"
+            onClick={advanceSol}
+            disabled={advancing}
+            className="group relative flex items-center gap-3 border border-accent/50 bg-accent/10 px-7 py-4 text-sm font-bold tracking-[0.25em] text-accent uppercase transition-all duration-150 hover:bg-accent/20 hover:shadow-[var(--shadow-glow-accent)] active:translate-y-px active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            <span className="h-2 w-2 rounded-full bg-accent shadow-[0_0_6px_var(--color-accent)]" />
+            {advancing ? 'Advancing' : 'Advance Sol'}
+            <span className={advancing ? 'a-blink' : ''}>▸▸▸</span>
+          </button>
+        </InstrumentPanel>
       </div>
 
       {advanceError && <ErrorBanner message={advanceError} />}
 
       {/* Atmosphere gauges */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div
+        className="reveal grid grid-cols-2 gap-4 lg:grid-cols-4"
+        style={{ '--i': 1 } as React.CSSProperties}
+      >
         <GaugeDial
           label="O₂"
           value={data.o2Percentage}
@@ -106,6 +128,7 @@ export default function MissionControl({ telemetry }: MissionControlProps) {
           min={0}
           max={30}
           subArcs={O2_ZONES}
+          severity={o2Severity(data.o2Percentage)}
         />
         <GaugeDial
           label="CO₂"
@@ -115,6 +138,7 @@ export default function MissionControl({ telemetry }: MissionControlProps) {
           max={6}
           decimals={2}
           subArcs={CO2_ZONES}
+          severity={co2Severity(data.co2Percentage)}
         />
         <GaugeDial
           label="Pressure"
@@ -123,6 +147,7 @@ export default function MissionControl({ telemetry }: MissionControlProps) {
           min={0}
           max={120}
           subArcs={PRESSURE_ZONES}
+          severity={pressureSeverity(data.internalPressureKPa)}
         />
         <GaugeDial
           label="Temp"
@@ -132,11 +157,15 @@ export default function MissionControl({ telemetry }: MissionControlProps) {
           max={320}
           decimals={0}
           subArcs={TEMP_ZONES}
+          severity={tempSeverity(data.internalTempKelvin)}
         />
       </div>
 
       {/* Resources + systems */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div
+        className="reveal grid grid-cols-1 gap-4 lg:grid-cols-2"
+        style={{ '--i': 2 } as React.CSSProperties}
+      >
         <ResourceBars
           foodSolsRemaining={data.foodSolsRemaining}
           waterLitres={data.waterLitres}
